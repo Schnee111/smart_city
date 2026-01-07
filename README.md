@@ -4,7 +4,8 @@
 
 Sistem pemantauan energi pintar berbasis IoT untuk skala perkotaan (Multi-distrik) dengan teknologi Apache Cassandra sebagai database NoSQL.
 
-![Dashboard Preview](docs/images/dashboard-preview.png)
+<img width="1919" height="1069" alt="image" src="https://github.com/user-attachments/assets/905a51e2-f38f-44f9-a897-ad2c5ebd127f" />
+
 
 ---
 
@@ -325,16 +326,6 @@ npm run type-check
 3. Commit changes (`git commit -m 'Add AmazingFeature'`)
 4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open Pull Request
-
----
-
-## 👥 Tim Pengembang
-
-| Nama | NIM | Role |
-|------|-----|------|
-| [Nama 1] | [NIM] | Backend Developer |
-| [Nama 2] | [NIM] | Frontend Developer |
-| [Nama 3] | [NIM] | Database & Simulator |
 
 ---
 
