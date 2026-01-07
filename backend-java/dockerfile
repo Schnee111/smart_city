@@ -1,12 +1,14 @@
-# Stage 1: Build menggunakan Maven
-FROM maven:3.8.4-openjdk-17-slim AS build
+# Stage 1: Build menggunakan Maven dengan Eclipse Temurin
+FROM maven:3.8-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-# Stage 2: Runtime
-FROM openjdk:17-slim
+# Stage 2: Runtime menggunakan JRE Eclipse Temurin yang jauh lebih ringan
+FROM eclipse-temurin:17-jre
 WORKDIR /app
+# Menyalin hasil build dari stage 1
 COPY --from=build /app/target/*.jar app.jar
-# Gunakan RAM terbatas agar hemat (512MB)
+
+# Membatasi RAM agar server AWS tetap stabil
 ENTRYPOINT ["java", "-Xmx512m", "-jar", "app.jar"]
