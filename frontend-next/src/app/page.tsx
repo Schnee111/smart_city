@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Map, BarChart3, Cpu, ArrowRight, Activity } from 'lucide-react';
+import { Map, ArrowRight, Activity } from 'lucide-react';
 import DashboardLayout from '@/src/components/layout/DashboardLayout';
 import StatsCards from '@/src/components/ui/StatsCards';
 import TotalEnergyChart from '@/src/components/ui/TotalEnergyChart';
@@ -27,62 +27,13 @@ export default function DashboardPage() {
       title="Smart City Energy Monitoring" 
       subtitle="Monitoring konsumsi energi real-time seluruh kota"
     >
-      {/* Stats Cards + Weather in single row */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-3">
-          <StatsCards />
-        </div>
-        <div className="lg:col-span-1">
-          <WeatherWidget cityName="Jakarta" latitude={-6.2088} longitude={106.8456} compact />
-        </div>
-      </div>
+      {/* Stats Cards Row */}
+      <StatsCards />
 
-      {/* Quick Actions */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Link 
-          href="/map"
-          className="group flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-lg hover:bg-slate-800/50 hover:border-slate-600 transition-all"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
-              <Map className="w-4 h-4 text-blue-400" />
-            </div>
-            <span className="text-white text-sm font-medium">Peta Sensor</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-        </Link>
-
-        <Link 
-          href="/sensors"
-          className="group flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-lg hover:bg-slate-800/50 hover:border-slate-600 transition-all"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center">
-              <Cpu className="w-4 h-4 text-purple-400" />
-            </div>
-            <span className="text-white text-sm font-medium">Manajemen Sensor</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-        </Link>
-
-        <Link 
-          href="/analytics"
-          className="group flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-lg hover:bg-slate-800/50 hover:border-slate-600 transition-all"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-amber-400" />
-            </div>
-            <span className="text-white text-sm font-medium">Analitik</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-        </Link>
-      </div>
-
-      {/* Map + Energy Chart Grid */}
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Map Preview */}
-        <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
+      {/* Main Content: Map + Sidebar (Weather + Chart) */}
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Map Preview - Takes 2 columns */}
+        <div className="lg:col-span-2 bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
             <div className="flex items-center gap-2">
               <Map className="w-4 h-4 text-emerald-400" />
@@ -92,35 +43,39 @@ export default function DashboardPage() {
               href="/map"
               className="text-emerald-400 text-xs hover:text-emerald-300 flex items-center gap-1"
             >
-              Buka <ArrowRight className="w-3 h-3" />
+              Buka Full <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="h-[280px]">
-            <MapContainer />
+          <div className="h-[400px]">
+            <MapContainer showLegend={false} showControls={false} />
           </div>
         </div>
 
-        {/* Energy Chart */}
-        <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-white font-medium text-sm">Total Konsumsi Energi</h3>
+        {/* Right Sidebar: Weather + Energy Chart */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* Weather Widget - Full version with forecast */}
+          <WeatherWidget cityName="Jakarta" latitude={-6.2088} longitude={106.8456} />
+
+          {/* Energy Chart - Compact */}
+          <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-700/50">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-white font-medium text-sm">Konsumsi Energi</h3>
+              </div>
+              <Link 
+                href="/analytics"
+                className="text-emerald-400 text-xs hover:text-emerald-300 flex items-center gap-1"
+              >
+                Detail <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
-            <Link 
-              href="/analytics"
-              className="text-emerald-400 text-xs hover:text-emerald-300 flex items-center gap-1"
-            >
-              Detail <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <div className="p-4">
-            <TotalEnergyChart />
+            <div className="p-3">
+              <TotalEnergyChart compact />
+            </div>
           </div>
         </div>
       </div>
-
-
     </DashboardLayout>
   );
 }

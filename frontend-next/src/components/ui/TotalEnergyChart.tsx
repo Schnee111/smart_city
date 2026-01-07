@@ -35,7 +35,7 @@ interface HistoryPoint {
   avgVoltage: number;
 }
 
-export default function TotalEnergyChart() {
+export default function TotalEnergyChart({ compact = false }: { compact?: boolean }) {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   
   // Fetch all sensors with latest readings
@@ -120,6 +120,54 @@ export default function TotalEnergyChart() {
     { name: 'Solar', value: currentStats.solarKwh, fill: '#f59e0b' },
     { name: 'Grid', value: currentStats.gridKwh, fill: '#6366f1' },
   ];
+
+  // Compact version for sidebar
+  if (compact) {
+    return (
+      <div className="space-y-3">
+        {/* Mini Stats */}
+        <div className="flex items-center justify-between text-sm">
+          <div>
+            <span className="text-slate-400">Total: </span>
+            <span className="text-white font-bold">{currentStats.totalKwh.toFixed(1)} kWh</span>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-amber-400">{currentStats.solarKwh.toFixed(1)} solar</span>
+            <span className="text-indigo-400">{currentStats.gridKwh.toFixed(1)} grid</span>
+          </div>
+        </div>
+
+        {/* Compact Chart */}
+        <div className="h-[120px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={history} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorTotalKwhCompact" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <YAxis 
+                stroke="#475569" 
+                tick={{ fill: '#94a3b8', fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+                width={30}
+              />
+              <Area
+                type="monotone"
+                dataKey="totalKwh"
+                stroke="#10b981"
+                strokeWidth={1.5}
+                fill="url(#colorTotalKwhCompact)"
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

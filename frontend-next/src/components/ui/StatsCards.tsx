@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import useSWR from 'swr';
-import { Zap, Radio, Gauge, TrendingUp, TrendingDown, Minus, LucideIcon } from 'lucide-react';
+import { Zap, Sun, Radio, Gauge, TrendingUp, TrendingDown, Minus, LucideIcon } from 'lucide-react';
 import { fetcher } from '@/src/lib/fetcher';
 import { formatKwh, formatNumber } from '@/src/lib/formatters';
 import { DistrictStats, Sensor } from '@/src/types';
@@ -77,10 +77,10 @@ export default function StatsCards() {
   const solarSensors = sensors?.filter(s => s.energySource === 'Solar').length || 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <StatCard
         icon={Zap}
-        label="Total Konsumsi Hari Ini"
+        label="Total Konsumsi"
         value={stats ? formatKwh(stats.totalKwh) : '0 kWh'}
         subValue="Semua distrik"
         trend="up"
@@ -102,10 +102,20 @@ export default function StatsCards() {
         icon={Gauge}
         label="Rata-rata Tegangan"
         value={stats ? `${formatNumber(stats.avgVoltage)} V` : '0 V'}
-        subValue={stats ? `Solar ratio: ${formatNumber(stats.solarRatio)}%` : 'Rata-rata kota'}
+        subValue="Standar: 220V"
         trend="neutral"
         color="bg-gradient-to-br from-blue-500/20 to-indigo-500/20"
         iconColor="text-blue-400"
+      />
+
+      <StatCard
+        icon={Sun}
+        label="Rasio Solar"
+        value={stats ? `${formatNumber(stats.solarRatio)}%` : '0%'}
+        subValue="Dari total energi"
+        trend="up"
+        color="bg-gradient-to-br from-yellow-500/20 to-amber-500/20"
+        iconColor="text-yellow-400"
       />
     </div>
   );
