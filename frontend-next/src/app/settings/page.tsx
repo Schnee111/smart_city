@@ -14,6 +14,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import DashboardLayout from '@/src/components/layout/DashboardLayout';
+import { Select } from '@/src/components/ui/Select';
 import { API_BASE_URL } from '@/src/lib/api';
 
 export default function SettingsPage() {
@@ -61,17 +62,17 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm text-slate-400 mb-2">Refresh Interval (ms)</label>
-              <select
+              <Select
                 value={refreshInterval}
                 onChange={(e) => setRefreshInterval(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
-              >
-                <option value="1000">1 detik</option>
-                <option value="3000">3 detik</option>
-                <option value="5000">5 detik</option>
-                <option value="10000">10 detik</option>
-                <option value="30000">30 detik</option>
-              </select>
+                options={[
+                  { value: '1000', label: '1 detik' },
+                  { value: '3000', label: '3 detik' },
+                  { value: '5000', label: '5 detik' },
+                  { value: '10000', label: '10 detik' },
+                  { value: '30000', label: '30 detik' }
+                ]}
+              />
               <p className="text-xs text-slate-500 mt-1">Interval polling data real-time dari server</p>
             </div>
           </div>

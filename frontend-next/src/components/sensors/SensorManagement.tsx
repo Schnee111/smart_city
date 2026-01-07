@@ -25,6 +25,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Badge } from '@/src/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/src/components/ui/Table';
+import { Select } from '@/src/components/ui/Select';
 import { SensorFormModal } from './SensorFormModal';
 import { DeleteSensorModal } from './DeleteSensorModal';
 import { useToast } from '@/src/components/ui/Toast';
@@ -140,25 +141,27 @@ export default function SensorManagement() {
               />
             </div>
             <div className="flex gap-2">
-              <select
+              <Select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="h-10 px-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                <option value="all">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="Offline">Offline</option>
-              </select>
-              <select
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'Active', label: 'Active' },
+                  { value: 'Maintenance', label: 'Maintenance' },
+                  { value: 'Offline', label: 'Offline' }
+                ]}
+                className="w-36"
+              />
+              <Select
                 value={filterSource}
                 onChange={(e) => setFilterSource(e.target.value)}
-                className="h-10 px-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                <option value="all">All Sources</option>
-                <option value="Solar">Solar</option>
-                <option value="Grid">Grid</option>
-              </select>
+                options={[
+                  { value: 'all', label: 'All Sources' },
+                  { value: 'Solar', label: 'Solar' },
+                  { value: 'Grid', label: 'Grid' }
+                ]}
+                className="w-32"
+              />
             </div>
           </div>
 

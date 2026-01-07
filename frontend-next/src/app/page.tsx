@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Map, BarChart3, Cpu, ArrowRight, Zap, Activity } from 'lucide-react';
 import DashboardLayout from '@/src/components/layout/DashboardLayout';
 import StatsCards from '@/src/components/ui/StatsCards';
-import EnergyChart from '@/src/components/ui/EnergyChart';
+import TotalEnergyChart from '@/src/components/ui/TotalEnergyChart';
 import DistrictPanel from '@/src/components/ui/DistrictPanel';
 import WeatherWidget from '@/src/components/ui/WeatherWidget';
 
@@ -122,7 +122,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-emerald-400" />
-              <h3 className="text-white font-semibold">Konsumsi Energi Real-time</h3>
+              <h3 className="text-white font-semibold">Total Konsumsi Energi</h3>
             </div>
             <Link 
               href="/analytics"
@@ -132,7 +132,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="p-4">
-            <EnergyChart />
+            <TotalEnergyChart />
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -7,12 +8,28 @@ import {
   Sun, 
   Building2,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Layers,
+  Radio
 } from 'lucide-react';
 import useSWR from 'swr';
 import DashboardLayout from '@/src/components/layout/DashboardLayout';
+import TotalEnergyChart from '@/src/components/ui/TotalEnergyChart';
 import EnergyChart from '@/src/components/ui/EnergyChart';
 import { fetcher } from '@/src/lib/fetcher';
+import { Select } from '@/src/components/ui/Select';
+import { useDashboardStore } from '@/src/lib/store';
+
+interface Sensor {
+  sensorId: string;
+  districtName: string;
+  energySource: string;
+  status: string;
+  latestReading?: {
+    kwhUsage: number;
+    voltage: number;
+  };
+}
 
 interface DistrictStats {
   districtName: string;
@@ -23,13 +40,58 @@ interface DistrictStats {
 }
 
 export default function AnalyticsPage() {
-  const { data: districtStats = [], isLoading: loading } = useSWR<DistrictStats[]>(
-    '/stats/districts',
+  const [viewMode, setViewMode] = useState<'total' | 'sensor'>('total');
+  const [selectedSensorId, setSelectedSensorId] = useState<string>('');
+  const { setSelectedSensor } = useDashboardStore();
+  
+  // Fetch sensors data and calculate stats
+  const { data: sensors = [], isLoading: loading } = useSWR<Sensor[]>(
+    '/sensors',
     fetcher,
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, refreshInterval: 5000 }
   );
 
-  const totalConsumption = Array.isArray(districtStats) ? districtStats.reduce((acc, d) => acc + (d.totalConsumption || 0), 0) : 0;
+  // Handle sensor selection
+  const handleSensorSelect = (sensorId: string) => {
+    setSelectedSensorId(sensorId);
+    const sensor = sensors.find(s => s.sensorId === sensorId);
+    if (sensor) {
+      setSelectedSensor(sensor as any);
+    }
+  };
+
+  // Calculate district stats from sensors data
+  const districtStats = useMemo(() => {
+    const districtMap = new Map<string, { sensors: Sensor[]; solar: number; total: number }>();
+    
+    sensors.forEach(sensor => {
+      const district = sensor.districtName;
+      if (!districtMap.has(district)) {
+        districtMap.set(district, { sensors: [], solar: 0, total: 0 });
+      }
+      const data = districtMap.get(district)!;
+      data.sensors.push(sensor);
+      data.total += sensor.latestReading?.kwhUsage || 0;
+      if (sensor.energySource === 'Solar') {
+        data.solar++;
+      }
+    });
+
+    const stats: DistrictStats[] = [];
+    districtMap.forEach((data, districtName) => {
+      stats.push({
+        districtName,
+        totalSensors: data.sensors.length,
+        avgConsumption: data.total / data.sensors.length,
+        totalConsumption: data.total,
+        solarPercentage: (data.solar / data.sensors.length) * 100
+      });
+    });
+
+    return stats.sort((a, b) => b.totalConsumption - a.totalConsumption);
+  }, [sensors]);
+
+  const totalConsumption = districtStats.reduce((acc, d) => acc + d.totalConsumption, 0);
   const avgSolarPercentage = districtStats.length > 0 
     ? districtStats.reduce((acc, d) => acc + d.solarPercentage, 0) / districtStats.length 
     : 0;
@@ -100,21 +162,85 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Main Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Energy Chart */}
+      {/* Main Charts Grid - Full width energy chart on top */}
+      <div className="mb-6">
+        {/* Energy Chart with Toggle */}
         <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
-          <div className="flex items-center gap-2 p-4 border-b border-slate-700/50">
-            <BarChart3 className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-white font-semibold">Konsumsi Energi Real-time</h3>
+          <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-white font-semibold">Konsumsi Energi Real-time</h3>
+            </div>
+            
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-3">
+              <div className="flex bg-slate-800 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('total')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all ${
+                    viewMode === 'total' 
+                      ? 'bg-emerald-500/20 text-emerald-400' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  Total
+                </button>
+                <button
+                  onClick={() => setViewMode('sensor')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all ${
+                    viewMode === 'sensor' 
+                      ? 'bg-emerald-500/20 text-emerald-400' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Radio className="w-3.5 h-3.5" />
+                  Per Sensor
+                </button>
+              </div>
+              
+              {/* Sensor Selector (shown only in sensor mode) */}
+              {viewMode === 'sensor' && (
+                <Select
+                  value={selectedSensorId}
+                  onChange={(e) => handleSensorSelect(e.target.value)}
+                  options={[
+                    { value: '', label: 'Pilih Sensor...' },
+                    ...sensors.map(s => ({
+                      value: s.sensorId,
+                      label: `${s.sensorId.slice(0, 8)}... (${s.districtName})`
+                    }))
+                  ]}
+                  className="w-56"
+                />
+              )}
+            </div>
           </div>
+          
           <div className="p-4">
-            <EnergyChart />
+            {viewMode === 'total' ? (
+              <TotalEnergyChart />
+            ) : (
+              <div>
+                {selectedSensorId ? (
+                  <EnergyChart />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-slate-400">
+                    <Radio className="w-12 h-12 mb-3 opacity-50" />
+                    <p className="font-medium">Pilih sensor untuk melihat data</p>
+                    <p className="text-sm text-slate-500">Gunakan dropdown di atas untuk memilih sensor</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
+      {/* District Stats Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* District Consumption Comparison */}
-        <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
+        <div className="lg:col-span-2 bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
           <div className="flex items-center gap-2 p-4 border-b border-slate-700/50">
             <Building2 className="w-5 h-5 text-emerald-400" />
             <h3 className="text-white font-semibold">Konsumsi per Distrik</h3>
@@ -161,12 +287,66 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+
+        {/* Energy Source Distribution - Pie Chart */}
+        <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 p-4 border-b border-slate-700/50">
+            <Zap className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-white font-semibold">Distribusi Energi</h3>
+          </div>
+          <div className="p-4">
+            <div className="flex flex-col items-center justify-center h-full min-h-[200px]">
+              {/* SVG Donut Chart */}
+              <div className="relative w-32 h-32">
+                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  {/* Background circle (Grid) */}
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="transparent"
+                    stroke="#475569"
+                    strokeWidth="3"
+                  />
+                  {/* Solar percentage arc */}
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="transparent"
+                    stroke="#f59e0b"
+                    strokeWidth="3"
+                    strokeDasharray={`${avgSolarPercentage} ${100 - avgSolarPercentage}`}
+                    strokeLinecap="round"
+                    className="transition-all duration-700"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-white">{avgSolarPercentage.toFixed(0)}%</p>
+                    <p className="text-xs text-slate-400">Solar</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                  <span className="text-xs text-slate-300">Solar</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
+                  <span className="text-xs text-slate-300">Grid</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Solar vs Grid Analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Solar Percentage by District */}
-        <div className="lg:col-span-2 bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
+      {/* Solar Percentage by District Table */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
           <div className="flex items-center gap-2 p-4 border-b border-slate-700/50">
             <Sun className="w-5 h-5 text-amber-400" />
             <h3 className="text-white font-semibold">Persentase Energi Solar per Distrik</h3>
@@ -214,45 +394,6 @@ export default function AnalyticsPage() {
                 </table>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Energy Source Distribution */}
-        <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
-          <div className="flex items-center gap-2 p-4 border-b border-slate-700/50">
-            <Zap className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-white font-semibold">Distribusi Sumber Energi</h3>
-          </div>
-          <div className="p-4">
-            <div className="flex flex-col items-center justify-center h-48">
-              {/* Simple visual representation */}
-              <div className="relative w-32 h-32">
-                <div className="absolute inset-0 rounded-full border-8 border-slate-700"></div>
-                <div 
-                  className="absolute inset-0 rounded-full border-8 border-amber-500"
-                  style={{
-                    clipPath: `polygon(50% 50%, 50% 0%, ${50 + 50 * Math.sin(avgSolarPercentage / 100 * 2 * Math.PI)}% ${50 - 50 * Math.cos(avgSolarPercentage / 100 * 2 * Math.PI)}%, 50% 50%)`
-                  }}
-                ></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-white">{avgSolarPercentage.toFixed(0)}%</p>
-                    <p className="text-xs text-slate-400">Solar</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-6 mt-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                  <span className="text-sm text-slate-300">Solar ({avgSolarPercentage.toFixed(0)}%)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
-                  <span className="text-sm text-slate-300">Grid ({(100 - avgSolarPercentage).toFixed(0)}%)</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
