@@ -79,6 +79,24 @@ body {
   display: none !important;
 }
 
+/* Tooltip styles for minimal sensor markers */
+.leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.leaflet-tooltip::before {
+  display: none !important;
+}
+
+.sensor-tooltip-minimal {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* Remove default leaflet controls styling */
 .leaflet-control-zoom {
   display: none !important;

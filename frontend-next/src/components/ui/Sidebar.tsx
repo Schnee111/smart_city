@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,12 +12,61 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
-  Cpu
+  Cpu,
+  Clock
 } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+}
+
+// Real-time clock component
+function RealtimeClock({ isOpen }: { isOpen: boolean }) {
+  const [time, setTime] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setTime(new Date());
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!time) return null;
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('id-ID', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false 
+    });
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('id-ID', { 
+      weekday: 'short',
+      day: 'numeric', 
+      month: 'short'
+    });
+  };
+
+  return (
+    <div className="px-3 py-2">
+      <div className={`flex items-center gap-2 px-2 py-2 rounded-lg bg-slate-800/50 ${isOpen ? '' : 'justify-center'}`}>
+        <Clock className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col"
+          >
+            <span className="text-white font-mono text-sm font-medium">{formatTime(time)}</span>
+            <span className="text-slate-500 text-xs">{formatDate(time)}</span>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
@@ -86,6 +136,9 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* Realtime Clock */}
+      <RealtimeClock isOpen={isOpen} />
 
       {/* Toggle Button */}
       <div className="p-3 border-t border-slate-700/50">

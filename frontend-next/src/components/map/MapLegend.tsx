@@ -4,61 +4,24 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface LegendItem {
-  color: string;
-  label: string;
-  ring?: boolean;
-}
-
-interface LegendGroup {
-  category: string;
-  items: LegendItem[];
-}
-
 export default function MapLegend() {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const legendItems: LegendGroup[] = [
-    {
-      category: 'Energy Source',
-      items: [
-        { color: 'bg-amber-500', label: 'Solar Power' },
-        { color: 'bg-blue-500', label: 'Grid Power' },
-      ],
-    },
-    {
-      category: 'Status',
-      items: [
-        { color: 'bg-emerald-500', label: 'Active', ring: true },
-        { color: 'bg-amber-500', label: 'Maintenance', ring: true },
-        { color: 'bg-red-500', label: 'Offline', ring: true },
-      ],
-    },
-    {
-      category: 'Load Indicator',
-      items: [
-        { color: 'bg-emerald-500', label: 'Normal (< 5 kWh)' },
-        { color: 'bg-amber-500', label: 'Medium (5-10 kWh)' },
-        { color: 'bg-red-500', label: 'High (> 10 kWh)' },
-      ],
-    },
-  ];
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="absolute top-16 left-4 z-[1000]">
-      <div className="bg-slate-800/95 border border-slate-600 rounded-lg overflow-hidden backdrop-blur-sm min-w-[180px]">
+      <div className="bg-slate-800/90 border border-slate-700/50 rounded-lg overflow-hidden backdrop-blur-sm min-w-[160px]">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-700/50 transition-colors"
+          className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-700/50 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-slate-400" />
-            <span className="text-sm font-medium text-white">Legend</span>
+            <Info className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-medium text-white">Legend</span>
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           )}
         </button>
 
@@ -68,30 +31,33 @@ export default function MapLegend() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-t border-slate-700"
+              transition={{ duration: 0.15 }}
+              className="border-t border-slate-700/50"
             >
-              <div className="p-3 space-y-3">
-                {legendItems.map((group) => (
-                  <div key={group.category}>
-                    <p className="text-xs font-medium text-slate-400 mb-1.5">
-                      {group.category}
-                    </p>
-                    <div className="space-y-1.5">
-                      {group.items.map((item) => (
-                        <div key={item.label} className="flex items-center gap-2">
-                          <div className="relative">
-                            <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                            {item.ring && (
-                              <div className={`absolute inset-0 rounded-full ${item.color} opacity-30 scale-150`}></div>
-                            )}
-                          </div>
-                          <span className="text-xs text-slate-300">{item.label}</span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="p-2.5 space-y-2">
+                {/* Energy Source */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/30" />
+                    <span className="text-xs text-slate-400">Solar</span>
                   </div>
-                ))}
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/30" />
+                    <span className="text-xs text-slate-400">Grid</span>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-emerald-500" />
+                    <span className="text-xs text-slate-400">Active</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-red-500 opacity-70" />
+                    <span className="text-xs text-slate-400">Offline</span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}

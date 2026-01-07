@@ -2,8 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import DashboardLayout from '@/src/components/layout/DashboardLayout';
-import DistrictPanel from '@/src/components/ui/DistrictPanel';
-import SensorDetail from '@/src/components/ui/SensorDetail';
+import DistrictPanelCompact from '@/src/components/ui/DistrictPanelCompact';
+import SensorDetailCompact from '@/src/components/ui/SensorDetailCompact';
 
 // Dynamic import for Leaflet (no SSR)
 const MapContainer = dynamic(() => import('@/src/components/map/MapContainer'), {
@@ -33,9 +33,9 @@ export default function MapPage() {
         </div>
 
         {/* Right Panel - District & Sensor Detail */}
-        <div className="lg:col-span-1 space-y-6">
-          <DistrictPanel />
-          <SensorDetail />
+        <div className="lg:col-span-1 space-y-4">
+          <DistrictPanelCompact />
+          <SensorDetailCompact />
         </div>
       </div>
     </DashboardLayout>

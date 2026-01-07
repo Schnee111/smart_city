@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapContainer as LeafletMap, TileLayer, useMap, Circle } from 'react-leaflet';
+import { MapContainer as LeafletMap, TileLayer, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import useSWR from 'swr';
-import { Layers, RefreshCw, Maximize2, Minus, Plus } from 'lucide-react';
+import { RefreshCw, Maximize2, Minus, Plus } from 'lucide-react';
 import { fetcher } from '@/src/lib/fetcher';
 import { useDashboardStore } from '@/src/lib/store';
 import { Sensor } from '@/src/types';
@@ -22,18 +23,24 @@ const MAP_STYLES = {
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 };
 
-// Component to handle map flyTo
+// Component to handle map flyTo with offset for better UX
 function MapController() {
   const map = useMap();
   const { selectedSensor } = useDashboardStore();
 
   useEffect(() => {
     if (selectedSensor) {
-      map.flyTo(
-        [selectedSensor.latitude, selectedSensor.longitude],
-        15,
-        { duration: 1.5 }
-      );
+      // Calculate offset to position marker in lower portion of viewport
+      // This ensures any popup/tooltip doesn't get cut off at the top
+      const mapSize = map.getSize();
+      const targetPoint = map.project([selectedSensor.latitude, selectedSensor.longitude], 14);
+      const offsetPoint = L.point(targetPoint.x, targetPoint.y - mapSize.y * 0.15);
+      const targetLatLng = map.unproject(offsetPoint, 14);
+      
+      map.flyTo(targetLatLng, 14, { 
+        duration: 0.8,
+        easeLinearity: 0.5
+      });
     }
   }, [selectedSensor, map]);
 

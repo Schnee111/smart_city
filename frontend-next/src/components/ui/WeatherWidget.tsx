@@ -151,14 +151,23 @@ export default function WeatherWidget({
   // Compact version for sidebar or small spaces
   if (compact) {
     return (
-      <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50 rounded-xl p-3">
-        <div className="flex items-center gap-3">
-          <div className={weatherInfo.color}>
-            {weatherInfo.icon}
+      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-xl p-3 h-full flex flex-col justify-center">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`${weatherInfo.color} [&>svg]:w-6 [&>svg]:h-6`}>
+              {weatherInfo.icon}
+            </div>
+            <div>
+              <p className="text-xl font-bold text-white">{Math.round(weather.temperature)}°C</p>
+              <p className="text-xs text-slate-400">{weatherInfo.label}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-white">{Math.round(weather.temperature)}°C</p>
-            <p className="text-xs text-slate-400">{weatherInfo.label}</p>
+          <div className="text-right">
+            <p className="text-xs text-slate-500">{cityName}</p>
+            <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+              <Droplets className="w-3 h-3" />
+              <span>{weather.humidity}%</span>
+            </div>
           </div>
         </div>
       </div>
