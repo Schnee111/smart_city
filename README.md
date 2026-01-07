@@ -1,73 +1,124 @@
-# 🏙️ Smart City Energy Monitoring (SCEM)
+# 🏙️ Smart City Energy Monitoring System (SCEM)
 
 **Proyek Mata Kuliah NoSQL - Apache Cassandra**
 
 Sistem pemantauan energi pintar berbasis IoT untuk skala perkotaan (Multi-distrik) dengan teknologi Apache Cassandra sebagai database NoSQL.
 
+![Dashboard Preview](docs/images/dashboard-preview.png)
+
+---
+
 ## 🎯 Tujuan Proyek
 
 - **SDG 7**: Energi Bersih & Terjangkau
 - **SDG 11**: Kota & Pemukiman Berkelanjutan
-- Mengelola inventaris sensor (CRUD) dan memvisualisasikan data penggunaan energi time-series secara real-time.
+- Mengelola inventaris sensor (CRUD) dan memvisualisasikan data penggunaan energi time-series secara real-time
+
+---
 
 ## 🛠️ Tech Stack
 
-| Layer | Teknologi |
-|-------|-----------|
-| **Database** | Apache Cassandra (Wide-column Store) |
-| **Backend** | Java Spring Boot 3 + DataStax Driver 4.x |
-| **Frontend** | Next.js 14 + Tailwind CSS + Leaflet.js |
-| **Simulator** | Python 3 + Requests |
+| Layer | Teknologi | Versi |
+|-------|-----------|-------|
+| **Database** | Apache Cassandra (Wide-column Store) | 4.x |
+| **Backend** | Java Spring Boot + DataStax Driver | 3.2 / 4.17 |
+| **Frontend** | Next.js + Tailwind CSS + Recharts | 14.x |
+| **Map** | Leaflet.js + React-Leaflet | 1.x / 4.x |
+| **Simulator** | Python + Requests | 3.8+ |
+| **Container** | Docker + Docker Compose | Latest |
 
 > ⚠️ **Golden Rule**: TIDAK MENGGUNAKAN ORM. Semua interaksi database menggunakan Raw CQL via `CqlSession` dan `PreparedStatement`.
+
+---
 
 ## 📁 Struktur Proyek
 
 ```
 smart_city/
-├── database/           # CQL scripts untuk inisialisasi Cassandra
-├── backend-java/       # Spring Boot REST API
-├── frontend-next/      # Next.js Dashboard
-├── simulator-python/   # Python data simulator
-└── docs/              # Dokumentasi proyek
+├── README.md                    # Dokumentasi utama (file ini)
+│
+├── database/                    # Database scripts
+│   ├── init.cql                 # CQL initialization script
+│   └── README.md                # Database documentation
+│
+├── backend-java/                # Spring Boot REST API
+│   ├── src/                     # Source code
+│   ├── pom.xml                  # Maven dependencies
+│   ├── Dockerfile               # Docker build file
+│   ├── docker-compose.yaml      # Docker Compose config
+│   └── README.md                # Backend documentation
+│
+├── frontend-next/               # Next.js Dashboard
+│   ├── src/                     # Source code (App Router)
+│   ├── package.json             # NPM dependencies
+│   └── README.md                # Frontend documentation
+│
+├── simulator-python/            # Python data simulator
+│   ├── scripts/                 # Simulator scripts
+│   ├── data/                    # Configuration data
+│   ├── requirements.txt         # Python dependencies
+│   └── README.md                # Simulator documentation
+│
+└── docs/                        # Project documentation
+    ├── API_CONTRACT.md          # API endpoints documentation
+    ├── DB_SCHEMA.md             # Database schema documentation
+    ├── backend-file-structure.md
+    ├── frontend-file-structure.md
+    └── simulator-structure.md
 ```
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Docker Desktop
 - Java 17+
 - Node.js 18+
 - Python 3.8+
-- Maven
+- Maven 3.8+
 
-### 1. Setup Database (Cassandra)
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/your-username/smart-city-energy.git
+cd smart-city-energy
+```
+
+### 2. Setup Database (Cassandra)
 
 ```bash
 # Jalankan Cassandra container
 docker run --name smart-city-db -p 9042:9042 -d cassandra:latest
 
-# Tunggu ~20 detik, lalu inisialisasi database
+# Tunggu ~30 detik sampai Cassandra ready
+docker logs smart-city-db | grep "Starting listening"
+
+# Inisialisasi database
 docker cp database/init.cql smart-city-db:/init.cql
 docker exec -it smart-city-db cqlsh -f /init.cql
 
 # Verifikasi
-docker exec -it smart-city-db cqlsh -e "USE smart_city; SELECT * FROM sensors;"
+docker exec -it smart-city-db cqlsh -e "USE smart_city; DESCRIBE TABLES;"
 ```
 
-### 2. Run Backend (Spring Boot)
+### 3. Run Backend (Spring Boot)
 
 ```bash
 cd backend-java
 
 # Build & Run
-mvn clean install
+mvn clean install -DskipTests
 mvn spring-boot:run
 
-# API akan tersedia di http://localhost:8080
+# Verify
+curl http://localhost:8080/api/v1/health
 ```
 
-### 3. Run Frontend (Next.js)
+Backend berjalan di `http://localhost:8080`
+
+### 4. Run Frontend (Next.js)
 
 ```bash
 cd frontend-next
@@ -77,11 +128,11 @@ npm install
 
 # Run development server
 npm run dev
-
-# Dashboard tersedia di http://localhost:3000
 ```
 
-### 4. Run Simulator (Python)
+Dashboard tersedia di `http://localhost:3000`
+
+### 5. Run Simulator (Python)
 
 ```bash
 cd simulator-python
@@ -89,48 +140,104 @@ cd simulator-python
 # Install dependencies
 pip install -r requirements.txt
 
-# (Optional) Seed lebih banyak sensors
+# (Optional) Seed sensors
 python scripts/seed_sensors.py
 
-# Jalankan simulator
+# Run simulator
 python scripts/sensor_gen.py
 ```
 
+---
+
+## 🐳 Docker Deployment
+
+### Full Stack dengan Docker Compose
+
+```bash
+cd backend-java
+
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+---
+
 ## 📡 API Endpoints
 
-| Endpoint | Method | Deskripsi |
-|----------|--------|-----------|
-| `/api/v1/sensors` | GET | Daftar semua sensor |
-| `/api/v1/sensors` | POST | Registrasi sensor baru |
-| `/api/v1/sensors/{id}` | GET | Detail sensor |
-| `/api/v1/energy/ingest` | POST | Ingest data dari simulator |
-| `/api/v1/energy/latest/{id}` | GET | Pembacaan terakhir sensor |
-| `/api/v1/stats` | GET | Statistik kota keseluruhan |
-| `/api/v1/stats/daily/{district}` | GET | Statistik per distrik |
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/v1/health` | Health check |
+| **Sensors** |
+| GET | `/api/v1/sensors` | Daftar semua sensor + latest reading |
+| GET | `/api/v1/sensors/{id}` | Detail sensor |
+| POST | `/api/v1/sensors` | Registrasi sensor baru |
+| PUT | `/api/v1/sensors/{id}` | Update sensor |
+| DELETE | `/api/v1/sensors/{id}` | Hapus sensor |
+| **Energy** |
+| POST | `/api/v1/energy/ingest` | Ingest data dari simulator |
+| GET | `/api/v1/energy/latest/{id}` | Pembacaan terakhir sensor |
+| GET | `/api/v1/energy/history/{id}` | Riwayat pembacaan per tanggal |
+| **Statistics** |
+| GET | `/api/v1/stats` | Statistik kota keseluruhan |
+| GET | `/api/v1/stats/daily/{district}` | Statistik per distrik |
+| GET | `/api/v1/stats/hourly` | Agregasi per jam (untuk chart) |
+| GET | `/api/v1/stats/districts` | Daftar profil distrik |
 
-## 📊 Fitur Dashboard
+Lihat [API_CONTRACT.md](docs/API_CONTRACT.md) untuk dokumentasi lengkap.
 
-- 🗺️ **Peta Interaktif**: Visualisasi sensor dengan Leaflet.js
-- 📈 **Grafik Real-time**: Tren penggunaan energi dengan Recharts
-- 🏙️ **Panel Distrik**: Filter berdasarkan area kota
-- 📊 **Kartu Statistik**: Total konsumsi, rasio solar, sensor aktif
-- 🌙 **Dark Mode**: Tema glassmorphism modern
+---
+
+## 📊 Dashboard Features
+
+### 🏠 Dashboard Utama (/)
+- **Stats Cards**: Total konsumsi, sensor aktif, rasio solar
+- **Mini Map**: Preview peta dengan marker sensor
+- **Energy Chart**: Tren konsumsi real-time
+- **Weather Widget**: Informasi cuaca kota
+
+### 📈 Analytics (/analytics)
+- **Historical Chart**: Data konsumsi per jam (Live/Today/History)
+- **District Comparison**: Perbandingan konsumsi antar distrik
+- **Energy Distribution**: Pie chart distribusi Solar vs Grid
+- **View Modes**: Total kota atau per sensor
+
+### 🗺️ Map (/map)
+- **Interactive Map**: Peta Leaflet dengan OpenStreetMap
+- **Sensor Markers**: Marker dengan warna berdasarkan status
+- **Popup Info**: Detail sensor dan reading terakhir
+- **District Filter**: Filter sensor per distrik
+
+### ⚙️ Sensors (/sensors)
+- **Data Table**: Tabel sensor dengan sorting & filtering
+- **CRUD Operations**: Create, Read, Update, Delete sensor
+- **Search**: Cari sensor berdasarkan ID atau distrik
+- **Status Management**: Ubah status sensor
+
+---
 
 ## 🗄️ Database Schema
 
+### Tables
+
 ```sql
--- Sensors (Metadata)
+-- 1. Sensors (Metadata)
 CREATE TABLE sensors (
     sensor_id uuid PRIMARY KEY,
     district_name text,
     latitude decimal,
     longitude decimal,
-    energy_source text,
-    status text,
+    energy_source text,     -- 'Solar' atau 'Grid'
+    status text,            -- 'Active', 'Maintenance', 'Offline'
     created_at timestamp
 );
 
--- Energy Logs (Time-Series)
+-- 2. Energy Logs (Time-Series)
 CREATE TABLE energy_logs (
     sensor_id uuid,
     event_date date,
@@ -140,26 +247,113 @@ CREATE TABLE energy_logs (
     PRIMARY KEY ((sensor_id, event_date), recorded_at)
 ) WITH CLUSTERING ORDER BY (recorded_at DESC);
 
--- District Profiles
+-- 3. District Profiles
 CREATE TABLE district_profiles (
     district_name text PRIMARY KEY,
     population int,
-    category text
+    category text           -- 'Industrial', 'Residential', 'Commercial'
 );
 ```
+
+Lihat [DB_SCHEMA.md](docs/DB_SCHEMA.md) untuk dokumentasi lengkap.
+
+---
+
+## 🔧 Configuration
+
+### Backend (application.properties)
+
+```properties
+server.port=8080
+cassandra.contact-points=localhost
+cassandra.port=9042
+cassandra.keyspace=smart_city
+cors.allowed-origins=http://localhost:3000
+```
+
+### Frontend (.env.local)
+
+```env
+NEXT_PUBLIC_API_URL=/api/v1
+NEXT_PUBLIC_WEATHER_API_KEY=your_key
+```
+
+### Simulator (.env)
+
+```env
+API_BASE_URL=http://localhost:8080/api/v1
+INTERVAL_SECONDS=5
+```
+
+---
+
+## 📚 Documentation
+
+| Document | Deskripsi |
+|----------|-----------|
+| [API_CONTRACT.md](docs/API_CONTRACT.md) | REST API endpoints & examples |
+| [DB_SCHEMA.md](docs/DB_SCHEMA.md) | Cassandra table schemas |
+| [backend-file-structure.md](docs/backend-file-structure.md) | Backend project structure |
+| [frontend-file-structure.md](docs/frontend-file-structure.md) | Frontend project structure |
+| [simulator-structure.md](docs/simulator-structure.md) | Simulator project structure |
+
+---
+
+## 🧪 Testing
+
+### Backend
+
+```bash
+cd backend-java
+mvn test
+```
+
+### Frontend
+
+```bash
+cd frontend-next
+npm run lint
+npm run type-check
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+---
 
 ## 👥 Tim Pengembang
 
 | Nama | NIM | Role |
 |------|-----|------|
-| [Nama Anda] | [NIM] | Backend Developer |
+| [Nama 1] | [NIM] | Backend Developer |
 | [Nama 2] | [NIM] | Frontend Developer |
 | [Nama 3] | [NIM] | Database & Simulator |
 
-## 📝 Lisensi
+---
+
+## 📝 License
 
 Proyek ini dibuat untuk keperluan akademik mata kuliah NoSQL.
 
 ---
 
-**Smart City Energy Monitoring © 2026**
+## 🙏 Acknowledgments
+
+- Apache Cassandra Documentation
+- Spring Boot Documentation
+- Next.js Documentation
+- Leaflet.js Documentation
+- DataStax Java Driver
+
+---
+
+**Smart City Energy Monitoring System © 2026**
+
+*Monitoring energi untuk kota yang lebih hijau dan berkelanjutan* 🌱
