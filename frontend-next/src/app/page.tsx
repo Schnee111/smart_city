@@ -7,6 +7,7 @@ import DashboardLayout from '@/src/components/layout/DashboardLayout';
 import StatsCards from '@/src/components/ui/StatsCards';
 import EnergyChart from '@/src/components/ui/EnergyChart';
 import DistrictPanel from '@/src/components/ui/DistrictPanel';
+import WeatherWidget from '@/src/components/ui/WeatherWidget';
 
 // Dynamic import for Leaflet (no SSR)
 const MapContainer = dynamic(() => import('@/src/components/map/MapContainer'), {
@@ -29,6 +30,11 @@ export default function DashboardPage() {
     >
       {/* Stats Cards */}
       <StatsCards />
+
+      {/* Weather Widget */}
+      <div className="mt-6">
+        <WeatherWidget cityName="Jakarta" latitude={-6.2088} longitude={106.8456} />
+      </div>
 
       {/* Quick Actions */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
