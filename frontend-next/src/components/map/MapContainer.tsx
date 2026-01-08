@@ -1,36 +1,40 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { MapContainer as LeafletMap, TileLayer, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import useSWR from 'swr';
-import { RefreshCw, Maximize2, Minus, Plus } from 'lucide-react';
-import { fetcher } from '@/src/lib/fetcher';
-import { useDashboardStore } from '@/src/lib/store';
-import { Sensor } from '@/src/types';
-import SensorMarker from './SensorMarker';
-import MapLegend from './MapLegend';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useState } from "react";
+import { MapContainer as LeafletMap, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
+import useSWR from "swr";
+import { RefreshCw, Maximize2, Minus, Plus } from "lucide-react";
+import { fetcher } from "@/src/lib/fetcher";
+import { useDashboardStore } from "@/src/lib/store";
+import { Sensor } from "@/src/types";
+import SensorMarker from "./SensorMarker";
+import MapLegend from "./MapLegend";
+import "leaflet/dist/leaflet.css";
 
 // Jakarta center coordinates
 const JAKARTA_CENTER: [number, number] = [-6.2088, 106.8456];
 const DEFAULT_ZOOM = 11;
 
 // District center coordinates for auto-zoom
-const DISTRICT_CENTERS: Record<string, { coords: [number, number], zoom: number }> = {
-  'Jakarta Pusat': { coords: [-6.1862, 106.8063], zoom: 13 },
-  'Jakarta Selatan': { coords: [-6.2615, 106.8106], zoom: 12 },
-  'Jakarta Utara': { coords: [-6.1380, 106.8827], zoom: 12 },
-  'Jakarta Barat': { coords: [-6.1670, 106.7390], zoom: 12 },
-  'Jakarta Timur': { coords: [-6.2250, 106.9004], zoom: 12 },
-  'Kepulauan Seribu': { coords: [-5.6108, 106.5260], zoom: 11 }
+const DISTRICT_CENTERS: Record<
+  string,
+  { coords: [number, number]; zoom: number }
+> = {
+  "Jakarta Pusat": { coords: [-6.1862, 106.8063], zoom: 13 },
+  "Jakarta Selatan": { coords: [-6.2615, 106.8106], zoom: 12 },
+  "Jakarta Utara": { coords: [-6.138, 106.8827], zoom: 12 },
+  "Jakarta Barat": { coords: [-6.167, 106.739], zoom: 12 },
+  "Jakarta Timur": { coords: [-6.225, 106.9004], zoom: 12 },
+  "Kepulauan Seribu": { coords: [-5.6108, 106.526], zoom: 11 },
 };
 
 // Map styles
 const MAP_STYLES = {
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  satellite:
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
 };
 
 // Component to handle map flyTo with offset for better UX
@@ -44,13 +48,19 @@ function MapController() {
       // Calculate offset to position marker in lower portion of viewport
       // This ensures any popup/tooltip doesn't get cut off at the top
       const mapSize = map.getSize();
-      const targetPoint = map.project([selectedSensor.latitude, selectedSensor.longitude], 14);
-      const offsetPoint = L.point(targetPoint.x, targetPoint.y - mapSize.y * 0.15);
+      const targetPoint = map.project(
+        [selectedSensor.latitude, selectedSensor.longitude],
+        14
+      );
+      const offsetPoint = L.point(
+        targetPoint.x,
+        targetPoint.y - mapSize.y * 0.15
+      );
       const targetLatLng = map.unproject(offsetPoint, 14);
-      
-      map.flyTo(targetLatLng, 14, { 
+
+      map.flyTo(targetLatLng, 14, {
         duration: 0.8,
-        easeLinearity: 0.5
+        easeLinearity: 0.5,
       });
     }
   }, [selectedSensor, map]);
@@ -62,14 +72,14 @@ function MapController() {
       if (districtInfo) {
         map.flyTo(districtInfo.coords, districtInfo.zoom, {
           duration: 1.0,
-          easeLinearity: 0.5
+          easeLinearity: 0.5,
         });
       }
     } else {
       // Reset to default view when no district selected
       map.flyTo(JAKARTA_CENTER, DEFAULT_ZOOM, {
         duration: 1.0,
-        easeLinearity: 0.5
+        easeLinearity: 0.5,
       });
     }
   }, [selectedDistrict, map]);
@@ -112,21 +122,22 @@ interface MapContainerProps {
   showControls?: boolean;
 }
 
-export default function MapContainer({ 
-  height = '100%', 
+export default function MapContainer({
+  height = "100%",
   showLegend = true,
-  showControls = true 
+  showControls = true,
 }: MapContainerProps) {
   const [isClient, setIsClient] = useState(false);
-  const [mapStyle, setMapStyle] = useState<keyof typeof MAP_STYLES>('dark');
+  const [mapStyle, setMapStyle] = useState<keyof typeof MAP_STYLES>("dark");
   const { selectedDistrict } = useDashboardStore();
 
   // Fetch sensors with polling every 5 seconds
-  const { data: sensors, error, isLoading, mutate } = useSWR<Sensor[]>(
-    '/api/v1/sensors',
-    fetcher,
-    { refreshInterval: 5000 }
-  );
+  const {
+    data: sensors,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<Sensor[]>("/api/v1/sensors", fetcher, { refreshInterval: 5000 });
 
   // Ensure client-side only rendering for Leaflet
   useEffect(() => {
@@ -135,15 +146,16 @@ export default function MapContainer({
 
   // Filter sensors by selected district
   const filteredSensors = selectedDistrict
-    ? sensors?.filter(s => s.districtName === selectedDistrict)
+    ? sensors?.filter((s) => s.districtName === selectedDistrict)
     : sensors;
 
   // Calculate stats
   const stats = {
     total: filteredSensors?.length || 0,
-    active: filteredSensors?.filter(s => s.status === 'Active').length || 0,
-    solar: filteredSensors?.filter(s => s.energySource === 'Solar').length || 0,
-    grid: filteredSensors?.filter(s => s.energySource === 'Grid').length || 0,
+    active: filteredSensors?.filter((s) => s.status === "Active").length || 0,
+    solar:
+      filteredSensors?.filter((s) => s.energySource === "Solar").length || 0,
+    grid: filteredSensors?.filter((s) => s.energySource === "Grid").length || 0,
   };
 
   if (!isClient) {
@@ -180,14 +192,14 @@ export default function MapContainer({
         center={JAKARTA_CENTER}
         zoom={DEFAULT_ZOOM}
         className="w-full h-full rounded-xl"
-        style={{ background: '#0f172a' }}
+        style={{ background: "#0f172a" }}
         zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url={MAP_STYLES[mapStyle]}
         />
-        
+
         <MapController />
         {showControls && <CustomControls />}
 
@@ -199,19 +211,21 @@ export default function MapContainer({
       {/* Map Style Switcher */}
       <div className="absolute top-4 left-4 z-[1000]">
         <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 rounded-lg p-1 flex gap-1">
-          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((style) => (
-            <button
-              key={style}
-              onClick={() => setMapStyle(style)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                mapStyle === style
-                  ? 'bg-emerald-500 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              {style.charAt(0).toUpperCase() + style.slice(1)}
-            </button>
-          ))}
+          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map(
+            (style) => (
+              <button
+                key={style}
+                onClick={() => setMapStyle(style)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  mapStyle === style
+                    ? "bg-emerald-500 text-white"
+                    : "text-slate-400 hover:text-white hover:bg-slate-700"
+                }`}
+              >
+                {style.charAt(0).toUpperCase() + style.slice(1)}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -235,7 +249,9 @@ export default function MapContainer({
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
               <span className="text-slate-400">Aktif:</span>
-              <span className="text-emerald-400 font-medium">{stats.active}</span>
+              <span className="text-emerald-400 font-medium">
+                {stats.active}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-amber-400"></div>
@@ -253,7 +269,9 @@ export default function MapContainer({
             className="text-slate-400 hover:text-white p-1 rounded transition-colors"
             title="Refresh data"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
       </div>
