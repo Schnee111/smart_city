@@ -16,6 +16,16 @@ import 'leaflet/dist/leaflet.css';
 const JAKARTA_CENTER: [number, number] = [-6.2088, 106.8456];
 const DEFAULT_ZOOM = 11;
 
+// District center coordinates for auto-zoom
+const DISTRICT_CENTERS: Record<string, { coords: [number, number], zoom: number }> = {
+  'Jakarta Pusat': { coords: [-6.1862, 106.8063], zoom: 13 },
+  'Jakarta Selatan': { coords: [-6.2615, 106.8106], zoom: 12 },
+  'Jakarta Utara': { coords: [-6.1380, 106.8827], zoom: 12 },
+  'Jakarta Barat': { coords: [-6.1670, 106.7390], zoom: 12 },
+  'Jakarta Timur': { coords: [-6.2250, 106.9004], zoom: 12 },
+  'Kepulauan Seribu': { coords: [-5.6108, 106.5260], zoom: 11 }
+};
+
 // Map styles
 const MAP_STYLES = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -26,8 +36,9 @@ const MAP_STYLES = {
 // Component to handle map flyTo with offset for better UX
 function MapController() {
   const map = useMap();
-  const { selectedSensor } = useDashboardStore();
+  const { selectedSensor, selectedDistrict } = useDashboardStore();
 
+  // Handle sensor selection - zoom to specific sensor
   useEffect(() => {
     if (selectedSensor) {
       // Calculate offset to position marker in lower portion of viewport
@@ -43,6 +54,25 @@ function MapController() {
       });
     }
   }, [selectedSensor, map]);
+
+  // Handle district selection - zoom to district area
+  useEffect(() => {
+    if (selectedDistrict) {
+      const districtInfo = DISTRICT_CENTERS[selectedDistrict];
+      if (districtInfo) {
+        map.flyTo(districtInfo.coords, districtInfo.zoom, {
+          duration: 1.0,
+          easeLinearity: 0.5
+        });
+      }
+    } else {
+      // Reset to default view when no district selected
+      map.flyTo(JAKARTA_CENTER, DEFAULT_ZOOM, {
+        duration: 1.0,
+        easeLinearity: 0.5
+      });
+    }
+  }, [selectedDistrict, map]);
 
   return null;
 }
