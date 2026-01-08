@@ -113,7 +113,8 @@ class EnergySimulator:
         iteration = 0
         while self.running:
             iteration += 1
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            jakarta_now = datetime.now(ZoneInfo("Asia/Jakarta"))
+            timestamp = jakarta_now.strftime("%Y-%m-%d %H:%M:%S")
             
             # --- PERBAIKAN: Refresh daftar sensor setiap 5 iterasi agar tidak berat ---
             if iteration == 1 or iteration % 5 == 0:
