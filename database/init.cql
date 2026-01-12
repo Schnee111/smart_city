@@ -36,11 +36,19 @@ CREATE TABLE IF NOT EXISTS district_profiles (
     category text              -- 'Industrial', 'Residential', 'Commercial'
 );
 
--- 5. Create Indexes for Common Queries
+-- 5. Counter Table for Total Wh per days per energy source
+CREATE TABLE IF NOT EXISTS energy_daily_summary (
+  date text,
+  energy_source text,
+  total_wh counter,
+  PRIMARY KEY (date, energy_source)
+);
+
+-- 6. Create Indexes for Common Queries
 CREATE INDEX IF NOT EXISTS sensors_by_district ON sensors (district_name);
 CREATE INDEX IF NOT EXISTS sensors_by_status ON sensors (status);
 
--- 6. Insert Sample District Profiles
+-- 7. Insert Sample District Profiles
 INSERT INTO district_profiles (district_name, population, category) 
 VALUES ('Jakarta Pusat', 1200000, 'Commercial');
 
@@ -56,7 +64,7 @@ VALUES ('Jakarta Barat', 2500000, 'Residential');
 INSERT INTO district_profiles (district_name, population, category) 
 VALUES ('Jakarta Timur', 2900000, 'Industrial');
 
--- 7. Insert Sample Sensors
+-- 8. Insert Sample Sensors
 INSERT INTO sensors (sensor_id, district_name, latitude, longitude, energy_source, status, created_at)
 VALUES (uuid(), 'Jakarta Pusat', -6.1751, 106.8650, 'Solar', 'Active', toTimestamp(now()));
 
