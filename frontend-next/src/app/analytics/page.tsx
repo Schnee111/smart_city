@@ -8,9 +8,10 @@ import {
   Sun, 
   Building2,
   ArrowUpRight,
-  ArrowDownRight,
   Layers,
-  Radio
+  Radio,
+  CloudFog,
+  Banknote
 } from 'lucide-react';
 import useSWR from 'swr';
 import DashboardLayout from '@/src/components/layout/DashboardLayout';
@@ -19,6 +20,10 @@ import EnergyChart from '@/src/components/ui/EnergyChart';
 import { fetcher } from '@/src/lib/fetcher';
 import { Select } from '@/src/components/ui/Select';
 import { useDashboardStore } from '@/src/lib/store';
+
+// --- DEFINISI FETCHER KHUSUS ANALYTICS (COST & EMISSIONS) ---
+type AnalyticsApiResponse<T> = { success: boolean; message?: string; data: T | null };
+const analyticsFetcher = (url: string) => fetch(url).then((r) => r.json() as Promise<AnalyticsApiResponse<number>>);
 
 interface Sensor {
   sensorId: string;
@@ -44,11 +49,33 @@ export default function AnalyticsPage() {
   const [selectedSensorId, setSelectedSensorId] = useState<string>('');
   const { setSelectedSensor } = useDashboardStore();
   
-  // Fetch sensors data and calculate stats
+  // 1. DATA SENSORS
   const { data: sensors = [], isLoading: loading } = useSWR<Sensor[]>(
     '/sensors',
     fetcher,
     { revalidateOnFocus: false, refreshInterval: 5000 }
+  );
+
+  // 2. DATA COST REALTIME
+  const { 
+    data: costData, 
+    error: costError, 
+    isLoading: costLoading 
+  } = useSWR<AnalyticsApiResponse<number>>(
+    '/api/v1/analytics/cost-realtime', 
+    analyticsFetcher, 
+    { refreshInterval: 30 * 1000 }
+  );
+
+  // 3. DATA EMISSIONS REALTIME (Logic Card dipindah ke sini)
+  const { 
+    data: emissionsData, 
+    error: emissionsError, 
+    isLoading: emissionsLoading 
+  } = useSWR<AnalyticsApiResponse<number>>(
+    '/api/v1/analytics/emissions-realtime', 
+    analyticsFetcher, 
+    { refreshInterval: 30 * 1000 }
   );
 
   // Handle sensor selection
@@ -60,7 +87,7 @@ export default function AnalyticsPage() {
     }
   };
 
-  // Calculate district stats from sensors data
+  // Calculate district stats logic...
   const districtStats = useMemo(() => {
     const districtMap = new Map<string, { sensors: Sensor[]; solar: number; total: number }>();
     
@@ -97,7 +124,6 @@ export default function AnalyticsPage() {
     : 0;
   const totalSensors = districtStats.reduce((acc, d) => acc + d.totalSensors, 0);
 
-  // Sort districts by consumption for ranking
   const rankedDistricts = [...districtStats].sort((a, b) => b.totalConsumption - a.totalConsumption);
 
   return (
@@ -161,10 +187,56 @@ export default function AnalyticsPage() {
           <p className="text-slate-400 text-sm">Total Sensor Aktif</p>
         </div>
       </div>
+      
+      <div className="gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* --- ENERGY COST REALTIME --- */}
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-green-300/15 flex items-center justify-center shrink-0">
+              <Banknote className="w-6 h-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Biaya Energi (GRID Listrik)</p>
+              <div className="text-2xl font-bold text-white">
+                <span className="text-sm text-slate-400 font-normal">Rp. </span>
+                {costLoading ? (
+                  <span className="text-lg text-slate-500">Memuat...</span>
+                ) : (costError || !costData || !costData.success) ? (
+                  <span className="text-lg text-slate-500">N/A</span>
+                ) : (
+                  <span>
+                    {Number(costData.data ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
 
-      {/* Main Charts Grid - Full width energy chart on top */}
+          {/* --- EMISSIONS CARD --- */}
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-red-800/15 flex items-center justify-center shrink-0">
+              <CloudFog className="w-6 h-6 text-red-300" />
+            </div>
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Emisi Karbon (C02)</p>
+              <div className="text-2xl font-bold text-white">
+                {emissionsLoading ? (
+                  <span className="text-lg text-slate-500">Memuat...</span>
+                ) : (emissionsError || !emissionsData || !emissionsData.success) ? (
+                  <span className="text-lg text-slate-500">N/A</span>
+                ) : (
+                  <span>
+                    {Number(emissionsData.data ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })}
+                  </span>
+                )}<span className="text-sm text-slate-400 font-normal"> kg</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Charts Grid */}
       <div className="mb-6">
-        {/* Energy Chart with Toggle */}
         <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
             <div className="flex items-center gap-2">
@@ -199,7 +271,7 @@ export default function AnalyticsPage() {
                 </button>
               </div>
               
-              {/* Sensor Selector (shown only in sensor mode) */}
+              {/* Sensor Selector */}
               {viewMode === 'sensor' && (
                 <Select
                   value={selectedSensorId}
@@ -299,44 +371,49 @@ export default function AnalyticsPage() {
               {/* SVG Donut Chart */}
               <div className="relative w-32 h-32">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  {/* Background circle (Grid) */}
                   <circle
                     cx="18"
                     cy="18"
                     r="15.915"
                     fill="transparent"
-                    stroke="#475569"
+                    stroke="#818cf8"
                     strokeWidth="3"
+                    strokeDasharray="100 0"
                   />
-                  {/* Solar percentage arc */}
+
+                  {/* Solar (Amber) */}
                   <circle
                     cx="18"
                     cy="18"
                     r="15.915"
                     fill="transparent"
-                    stroke="#f59e0b"
+                    stroke="#f59e0b" // amber-500
                     strokeWidth="3"
                     strokeDasharray={`${avgSolarPercentage} ${100 - avgSolarPercentage}`}
                     strokeLinecap="round"
                     className="transition-all duration-700"
                   />
                 </svg>
+
+                {/* Center Label */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-white">{avgSolarPercentage.toFixed(0)}%</p>
+                    <p className="text-2xl font-bold text-white">
+                      {avgSolarPercentage.toFixed(0)}%
+                    </p>
                     <p className="text-xs text-slate-400">Solar</p>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4 mt-4">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-amber-500"></div>
                   <span className="text-xs text-slate-300">Solar</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-slate-600"></div>
-                  <span className="text-xs text-slate-300">Grid</span>
+                  <div className="w-3 h-3 rounded-full bg-indigo-400"></div>
+                  <span className="text-xs text-indigo-400">Grid</span>
                 </div>
               </div>
             </div>
