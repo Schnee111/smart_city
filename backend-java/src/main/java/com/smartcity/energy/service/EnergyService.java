@@ -3,9 +3,13 @@ package com.smartcity.energy.service;
 import com.smartcity.energy.dto.EnergyIngestRequest;
 import com.smartcity.energy.dto.EnergyLatestResponse;
 import com.smartcity.energy.model.EnergyLog;
+import com.smartcity.energy.repository.EnergyDailySummaryRepository;
 import com.smartcity.energy.repository.EnergyLogRepository;
+import com.smartcity.energy.repository.SensorRepository;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,11 +24,18 @@ public class EnergyService {
 
     private final EnergyLogRepository energyLogRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final EnergyDailySummaryRepository EnergyDailySummaryRepository;
+    private final SensorRepository SensorRepository;
+
 
     public EnergyService(EnergyLogRepository energyLogRepository, 
-                         SimpMessagingTemplate messagingTemplate) {
+                         SimpMessagingTemplate messagingTemplate, 
+                         EnergyDailySummaryRepository EnergyDailySummaryRepository,
+                         SensorRepository SensorRepository) {
         this.energyLogRepository = energyLogRepository;
         this.messagingTemplate = messagingTemplate;
+        this.EnergyDailySummaryRepository = EnergyDailySummaryRepository;
+        this.SensorRepository = SensorRepository;
     }
 
     /**
@@ -42,15 +53,31 @@ public class EnergyService {
 
         // Broadcast to WebSocket subscribers
         future.thenAccept(savedLog -> {
+            
+            String energySource = SensorRepository
+                .findById(savedLog.getSensorId())
+                .map(s -> s.getEnergySource().toUpperCase())
+                .orElseThrow();
+
+            // convert kWh (BigDecimal) -> Wh (long) to preserve fractional part
+            long wh = savedLog.getKwhUsage().multiply(BigDecimal.valueOf(1000)).longValue();
+            EnergyDailySummaryRepository.incrementWh(
+                savedLog.getEventDate().toString(),
+                energySource,
+                wh
+            );
+
             EnergyLatestResponse response = new EnergyLatestResponse(
                 savedLog.getSensorId(),
                 savedLog.getKwhUsage(),
                 savedLog.getVoltage(),
                 savedLog.getRecordedAt()
             );
+
             messagingTemplate.convertAndSend("/topic/energy/" + savedLog.getSensorId(), response);
             messagingTemplate.convertAndSend("/topic/energy/all", response);
         });
+
 
         return future;
     }
@@ -58,27 +85,44 @@ public class EnergyService {
     /**
      * Ingest energy data synchronously
      */
-    public EnergyLog ingestEnergyDataSync(EnergyIngestRequest request) {
-        EnergyLog log = new EnergyLog();
-        log.setSensorId(request.getSensorId());
-        log.setEventDate(LocalDate.now());
-        log.setKwhUsage(request.getKwhUsage());
-        log.setVoltage(request.getVoltage());
+   public EnergyLog ingestEnergyDataSync(EnergyIngestRequest request) {
 
-        EnergyLog saved = energyLogRepository.save(log);
+    EnergyLog log = new EnergyLog();
+    log.setSensorId(request.getSensorId());
+    log.setEventDate(LocalDate.now());
+    log.setKwhUsage(request.getKwhUsage());
+    log.setVoltage(request.getVoltage());
 
-        // Broadcast to WebSocket subscribers
-        EnergyLatestResponse response = new EnergyLatestResponse(
-            saved.getSensorId(),
-            saved.getKwhUsage(),
-            saved.getVoltage(),
-            saved.getRecordedAt()
-        );
-        messagingTemplate.convertAndSend("/topic/energy/" + saved.getSensorId(), response);
-        messagingTemplate.convertAndSend("/topic/energy/all", response);
+    EnergyLog saved = energyLogRepository.save(log);
 
-        return saved;
-    }
+    // 🔥 AMBIL ENERGY SOURCE DARI SENSOR
+    String energySource = SensorRepository
+        .findById(saved.getSensorId())
+        .map(s -> s.getEnergySource().toUpperCase())
+        .orElseThrow(() -> new IllegalStateException("Sensor not found"));
+
+    // 🔥 UPDATE COUNTER HARIAN
+    long wh = saved.getKwhUsage().multiply(BigDecimal.valueOf(1000)).longValue();
+    EnergyDailySummaryRepository.incrementWh(
+        saved.getEventDate().toString(),
+        energySource,
+        wh
+    );
+
+    // Broadcast WebSocket
+    EnergyLatestResponse response = new EnergyLatestResponse(
+        saved.getSensorId(),
+        saved.getKwhUsage(),
+        saved.getVoltage(),
+        saved.getRecordedAt()
+    );
+
+    messagingTemplate.convertAndSend("/topic/energy/" + saved.getSensorId(), response);
+    messagingTemplate.convertAndSend("/topic/energy/all", response);
+
+    return saved;
+}
+
 
     /**
      * Get latest reading for a sensor
